@@ -1,0 +1,105 @@
+{
+  "url": "http://127.0.0.1:8501",
+  "checks": {
+    "localhost_8501_opens": true,
+    "page_title_present": true,
+    "page_title_correct": true,
+    "progress_ring_rendered": true,
+    "reserve_prediction_has_output": true,
+    "prediction_button_outputs_result": true,
+    "no_obvious_layout_breakage": true
+  },
+  "layout": {
+    "innerWidth": 1600,
+    "clientWidth": 1600,
+    "scrollWidth": 1600,
+    "horizontalOverflow": 0,
+    "title": {
+      "x": 19.1875,
+      "y": 115.1875,
+      "width": 1561.625,
+      "height": 115.109375
+    },
+    "reserveCard": {
+      "x": 19.1875,
+      "y": 930.25,
+      "width": 774.8125,
+      "height": 945.125
+    },
+    "planStack": {
+      "x": 806,
+      "y": 930.25,
+      "width": 774.8125,
+      "height": 880
+    },
+    "analyticsCards": [
+      {
+        "x": 19.1875,
+        "y": 1891.375,
+        "width": 774.8125,
+        "height": 416.5625
+      },
+      {
+        "x": 806,
+        "y": 1891.375,
+        "width": 774.8125,
+        "height": 416.5625
+      }
+    ]
+  },
+  "notes": [
+    "console warnings/errors=10"
+  ],
+  "screenshot": "/home/zhishi/PredictOvarianResponse-main/artifacts/demo/playwright_smoke.png",
+  "title_text": "卵巢储备功能与促排卵方案AI辅助系统",
+  "ring_box": {
+    "x": 53.984375,
+    "y": 1091.859375,
+    "width": 270,
+    "height": 270
+  },
+  "console_issues_sample": [
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'ambient-light-sensor'."
+    },
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'battery'."
+    },
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'document-domain'."
+    },
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'layout-animations'."
+    },
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'legacy-image-formats'."
+    },
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'oversized-images'."
+    },
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'vr'."
+    },
+    {
+      "type": "warning",
+      "text": "Unrecognized feature: 'wake-lock'."
+    },
+    {
+      "type": "warning",
+      "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing."
+    },
+    {
+      "type": "warning",
+      "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing."
+    }
+  ],
+  "page_errors": [],
+  "failed_requests": []
+}

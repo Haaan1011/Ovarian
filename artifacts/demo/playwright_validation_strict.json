@@ -1,0 +1,90 @@
+{
+  "target_url": "http://127.0.0.1:8501",
+  "port": 8501,
+  "pid": "1100369",
+  "process": "UID          PID    PPID  C STIME TTY          TIME CMD\nzhishi   1100369 1083708  0 16:57 pts/16   00:00:00 /home/zhishi/anaconda3/envs/Han_Overian/bin/python /home/zhishi/anaconda3/envs/Han_Overian/bin/streamlit run app.py --server.headless true --server.port 8501",
+  "cwd": "/home/zhishi/PredictOvarianResponse-main",
+  "ss": "LISTEN   0        128                   0.0.0.0:8501             0.0.0.0:*       users:((\"streamlit\",pid=1100369,fd=6))                                         \nLISTEN   0        128                      [::]:8501                [::]:*       users:((\"streamlit\",pid=1100369,fd=7))",
+  "checks": {
+    "latest_code_started_successfully": true,
+    "correct_port_8501": true,
+    "page_opened_successfully": true,
+    "title_correct": true,
+    "console_has_no_errors": true,
+    "reserve_flow_complete": true,
+    "plan_flow_complete": true,
+    "no_horizontal_layout_overflow": true
+  },
+  "artifacts": {
+    "screenshot": "/home/zhishi/PredictOvarianResponse-main/artifacts/demo/playwright_validation_strict.png",
+    "json": "/home/zhishi/PredictOvarianResponse-main/artifacts/demo/playwright_validation_strict.json",
+    "markdown": "/home/zhishi/PredictOvarianResponse-main/artifacts/demo/playwright_validation_strict.md"
+  },
+  "steps": [
+    "1. 使用 Playwright 访问 http://127.0.0.1:8501 并等待首屏渲染。",
+    "2. 读取首页主标题并校验文本是否为“卵巢储备功能与促排卵方案AI辅助系统”。",
+    "3. 点击左侧“生成卵巢储备功能结果”，等待进度环和储备结果卡片出现。",
+    "4. 点击右侧“生成促排卵方案结果”，等待风险条和方案指标卡片出现。",
+    "5. 记录页面截图，并检查是否存在 console error / page error / failed request。"
+  ],
+  "console": {
+    "warnings": [
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'ambient-light-sensor'."
+      },
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'battery'."
+      },
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'document-domain'."
+      },
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'layout-animations'."
+      },
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'legacy-image-formats'."
+      },
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'oversized-images'."
+      },
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'vr'."
+      },
+      {
+        "type": "warning",
+        "text": "Unrecognized feature: 'wake-lock'."
+      },
+      {
+        "type": "warning",
+        "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing."
+      },
+      {
+        "type": "warning",
+        "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing."
+      }
+    ],
+    "errors": [],
+    "page_errors": [],
+    "failed_requests": []
+  },
+  "title_text": "卵巢储备功能与促排卵方案AI辅助系统",
+  "ring_box": {
+    "x": 53.984375,
+    "y": 1091.859375,
+    "width": 270,
+    "height": 270
+  },
+  "layout": {
+    "scrollWidth": 1600,
+    "clientWidth": 1600,
+    "horizontalOverflow": 0
+  },
+  "all_required_checks_passed": true
+}
