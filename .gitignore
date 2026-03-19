@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+.venv/
+.playwright-check/
+artifacts/models/xgboost/*
+!artifacts/models/xgboost/.gitkeep
+artifacts/preprocessors/mice/*
+!artifacts/preprocessors/mice/.gitkeep
+artifacts/demo/*
+!artifacts/demo/.gitkeep
+models/

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "predict-ovarian-response"
+version = "1.1.0"
+description = "Python and Streamlit project for ovarian response prediction in IVF."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "joblib>=1.2.0",
+    "numpy>=1.23.0",
+    "openpyxl>=3.0.10",
+    "optuna>=3.0.0",
+    "pandas>=1.5.0",
+    "plotly>=5.10.0",
+    "scikit-learn>=1.2.0",
+    "shap>=0.41.0",
+    "streamlit>=1.20.0",
+    "xgboost>=1.7.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["ovarian_prediction*", "frontend*"]

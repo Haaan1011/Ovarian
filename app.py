@@ -17,15 +17,27 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
+REPO_ROOT = Path(__file__).resolve().parent
+
 # 确保能导入项目包
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(REPO_ROOT))
+
+from ovarian_prediction.config import BACKGROUND_IMAGES_DIR, BRAND_IMAGES_DIR, LEGACY_MODEL_DIR, MODEL_ARTIFACT_DIR
+
+from frontend.streamlit_app.components import layout as layout_components
+from frontend.streamlit_app.components import metric_cards as metric_cards_component
+from frontend.streamlit_app.components import result_panels as result_panel_components
+from frontend.streamlit_app.services import system_loader, upload_parser as upload_parser_service
+from frontend.streamlit_app.state import session_state as session_state_utils
+from frontend.streamlit_app.utils import media as media_utils
 
 
-APP_DIR = Path(__file__).resolve().parent
-LOCAL_MODEL_DIR = APP_DIR / "models"
+APP_DIR = REPO_ROOT / "frontend" / "streamlit_app"
+LOCAL_MODEL_DIR = MODEL_ARTIFACT_DIR
 LOCAL_MODEL_PATH = LOCAL_MODEL_DIR / "PORDM.pkl"
-TITLE_LOGO_PATH = APP_DIR / "fuyou_logo_fullseal.png"
-RAW_TITLE_LOGO_PATH = APP_DIR / "fuyou logo.png"
+LEGACY_MODEL_PATH = LEGACY_MODEL_DIR / "PORDM.pkl"
+TITLE_LOGO_PATH = BRAND_IMAGES_DIR / "fuyou_logo_fullseal.png"
+RAW_TITLE_LOGO_PATH = BRAND_IMAGES_DIR / "fuyou_logo_raw.png"
 
 POR_THRESHOLDS = {"low": 0.20, "high": 0.40}
 HOR_THRESHOLDS = {"low": 0.20, "high": 0.35}
@@ -188,9 +200,9 @@ def build_title_logo_path() -> Optional[Path]:
     return TITLE_LOGO_PATH
 
 
-BACKGROUND_URI = get_background_uri()
-TITLE_LOGO_FILE = build_title_logo_path()
-TITLE_LOGO_URI = encode_file_to_data_uri(TITLE_LOGO_FILE) if TITLE_LOGO_FILE and TITLE_LOGO_FILE.exists() else ""
+BACKGROUND_URI = media_utils.get_background_uri()
+TITLE_LOGO_FILE = media_utils.build_title_logo_path()
+TITLE_LOGO_URI = media_utils.encode_file_to_data_uri(TITLE_LOGO_FILE) if TITLE_LOGO_FILE and TITLE_LOGO_FILE.exists() else ""
 
 
 CSS = """
@@ -1158,22 +1170,7 @@ st.markdown(CSS.replace("__BACKGROUND__", BACKGROUND_URI), unsafe_allow_html=Tru
 @st.cache_resource(show_spinner=False)
 def load_system():
     try:
-        from ovarian_prediction.clinical_system import ClinicalDecisionSystem
-        from ovarian_prediction.models import OvarianMLSystem
-        from ovarian_prediction.preprocessing import OvarianPreprocessor, make_synthetic_dataset
-    except Exception as exc:
-        raise RuntimeError(f"{type(exc).__name__}: {exc}") from exc
-
-    if LOCAL_MODEL_PATH.exists():
-        return ClinicalDecisionSystem.from_directory(str(LOCAL_MODEL_DIR)), "本地预训练模型"
-
-    try:
-        df = make_synthetic_dataset(n=200, random_state=42)
-        proc = OvarianPreprocessor()
-        data = proc.fit_transform(df)
-        ml_system = OvarianMLSystem(n_trials=2)
-        ml_system.train_all(data, tune=False)
-        return ClinicalDecisionSystem.from_ml_system(ml_system), "演示模型"
+        return system_loader.load_system()
     except Exception as exc:
         raise RuntimeError(f"{type(exc).__name__}: {exc}") from exc
 
@@ -2040,9 +2037,7 @@ SESSION_DEFAULTS = {
 
 SESSION_DEFAULTS.update({key: "" for key in FORM_INPUT_KEYS.values()})
 
-for key, value in SESSION_DEFAULTS.items():
-    if key not in st.session_state:
-        st.session_state[key] = value
+session_state_utils.initialize_session_state(FORM_INPUT_KEYS)
 
 
 def build_reserve_patient(age, amh, fsh, afc) -> Dict:
@@ -2154,27 +2149,9 @@ def inject_figma_capture_script() -> None:
     )
 
 
-title_logo_html = ""
-if TITLE_LOGO_URI:
-    title_logo_html = f"<div class='title-logo-wrap'><img class='title-logo' src='{TITLE_LOGO_URI}' alt='福幼标识'></div>"
-
-inject_scroll_persistence_script()
-inject_figma_capture_script()
-
-st.markdown(
-    f"""
-    <div class='title-frame'>
-        <div class='title-row'>
-            {title_logo_html}
-            <div class='title-copy'>
-                <div class='page-title'>卵巢储备功能与促排卵方案AI辅助系统</div>
-                <div class='page-subtitle'>AI-Assisted System for Ovarian Reserve Function Evaluation and Ovulation Stimulation Planning</div>
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+layout_components.inject_scroll_persistence_script()
+layout_components.inject_figma_capture_script()
+layout_components.render_title_frame(TITLE_LOGO_URI)
 
 toolbar_left_col, toolbar_right_col = st.columns([1, 1], gap="medium")
 
@@ -2182,8 +2159,8 @@ with toolbar_right_col:
     narrow_left, narrow_right = st.columns([0.62, 0.38], gap="small")
     with narrow_right:
         st.markdown("<div class='upload-toolbar'><div class='upload-toolbar-note'>File Input</div></div>", unsafe_allow_html=True)
-        template_download_uri = encode_bytes_to_data_uri(
-            build_upload_template_bytes(),
+        template_download_uri = media_utils.encode_bytes_to_data_uri(
+            upload_parser_service.build_upload_template_bytes(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         with st.popover("文件输入"):
@@ -2208,7 +2185,7 @@ with toolbar_right_col:
                 uploaded_digest = hashlib.md5(uploaded_bytes).hexdigest()
                 if uploaded_digest != st.session_state.uploaded_file_digest:
                     try:
-                        patients = load_uploaded_patients(uploaded_bytes, uploaded_file.name)
+                        patients = upload_parser_service.load_uploaded_patients(uploaded_bytes, uploaded_file.name)
                         st.session_state.uploaded_patients = patients
                         st.session_state.uploaded_file_digest = uploaded_digest
                         st.session_state.uploaded_file_name = uploaded_file.name
@@ -2302,11 +2279,11 @@ with left_col:
     reserve_result_slot = st.empty()
     if st.session_state.reserve_error:
         reserve_error_slot.markdown(
-            error_banner_html("卵巢储备功能结果生成失败", st.session_state.reserve_error),
+            metric_cards_component.error_banner_html("卵巢储备功能结果生成失败", st.session_state.reserve_error),
             unsafe_allow_html=True,
         )
     reserve_result_slot.markdown(
-        reserve_result_html(st.session_state.reserve_report, st.session_state.reserve_patient),
+        result_panel_components.reserve_result_html(st.session_state.reserve_report, st.session_state.reserve_patient),
         unsafe_allow_html=True,
     )
 
@@ -2345,11 +2322,11 @@ with right_col:
     plan_result_slot = st.empty()
     if st.session_state.plan_error:
         plan_error_slot.markdown(
-            error_banner_html("促排卵方案生成失败", st.session_state.plan_error),
+            metric_cards_component.error_banner_html("促排卵方案生成失败", st.session_state.plan_error),
             unsafe_allow_html=True,
         )
     plan_result_slot.markdown(
-        plan_result_html(st.session_state.plan_report, st.session_state.plan_patient),
+        result_panel_components.plan_result_html(st.session_state.plan_report, st.session_state.plan_patient),
         unsafe_allow_html=True,
     )
 
@@ -2477,7 +2454,7 @@ if plan_submitted:
 
 if st.session_state.reserve_error:
     reserve_error_slot.markdown(
-        error_banner_html("卵巢储备功能结果生成失败", st.session_state.reserve_error),
+        metric_cards_component.error_banner_html("卵巢储备功能结果生成失败", st.session_state.reserve_error),
         unsafe_allow_html=True,
     )
 else:
@@ -2485,18 +2462,18 @@ else:
 
 if st.session_state.plan_error:
     plan_error_slot.markdown(
-        error_banner_html("促排卵方案生成失败", st.session_state.plan_error),
+        metric_cards_component.error_banner_html("促排卵方案生成失败", st.session_state.plan_error),
         unsafe_allow_html=True,
     )
 else:
     plan_error_slot.empty()
 
 reserve_result_slot.markdown(
-    reserve_result_html(st.session_state.reserve_report, st.session_state.reserve_patient),
+    result_panel_components.reserve_result_html(st.session_state.reserve_report, st.session_state.reserve_patient),
     unsafe_allow_html=True,
 )
 plan_result_slot.markdown(
-    plan_result_html(st.session_state.plan_report, st.session_state.plan_patient),
+    result_panel_components.plan_result_html(st.session_state.plan_report, st.session_state.plan_patient),
     unsafe_allow_html=True,
 )
 
@@ -2507,7 +2484,7 @@ usage_col, traffic_col = st.columns([1, 1], gap="medium")
 
 with usage_col:
     st.markdown(
-        ranking_card_html(
+        metric_cards_component.ranking_card_html(
             "地区使用排名",
             "Regional Usage Ranking",
             [
@@ -2525,7 +2502,7 @@ with usage_col:
 
 with traffic_col:
     st.markdown(
-        ranking_card_html(
+        metric_cards_component.ranking_card_html(
             "平台浏览量",
             "Regional Traffic Ranking",
             [
@@ -2545,3 +2522,11 @@ st.markdown(
     "<div class='page-footer'>平台由福州智视医学科技有限公司提供</div>",
     unsafe_allow_html=True,
 )
+
+
+def main() -> None:
+    """Compatibility entrypoint for the root app.py wrapper."""
+
+
+if __name__ == "__main__":
+    main()
