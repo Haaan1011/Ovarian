@@ -2090,36 +2090,63 @@ def inject_scroll_persistence_script() -> None:
         dedent(
             """
             <script>
-            (function() {{
+            (function() {
               const parentWindow = window.parent;
               const key = "ovarian_app_scroll_y";
-              try {{
-                if (!parentWindow.__ovarianScrollPersistBound) {{
+              try {
+                if (!parentWindow.__ovarianScrollPersistBound) {
                   parentWindow.__ovarianScrollPersistBound = true;
                   let ticking = false;
-                  parentWindow.addEventListener("scroll", () => {{
-                    if (ticking) {{
+                  parentWindow.addEventListener("scroll", () => {
+                    if (ticking) {
                       return;
-                    }}
+                    }
                     ticking = true;
-                    parentWindow.requestAnimationFrame(() => {{
+                    parentWindow.requestAnimationFrame(() => {
                       parentWindow.sessionStorage.setItem(
                         key,
                         String(parentWindow.scrollY || parentWindow.pageYOffset || 0)
                       );
                       ticking = false;
-                    }});
-                  }}, {{ passive: true }});
-                }}
+                    });
+                  }, { passive: true });
+                }
                 const saved = parentWindow.sessionStorage.getItem(key);
-                if (saved !== null) {{
+                if (saved !== null) {
                   const top = Number(saved) || 0;
-                  parentWindow.requestAnimationFrame(() => {{
-                    parentWindow.scrollTo({{ top, behavior: "auto" }});
-                  }});
-                }}
-              }} catch (error) {{}}
-            }})();
+                  parentWindow.requestAnimationFrame(() => {
+                    parentWindow.scrollTo({ top, behavior: "auto" });
+                  });
+                }
+              } catch (error) {}
+            })();
+            </script>
+            """
+        ).strip(),
+        height=0,
+    )
+
+
+def inject_figma_capture_script() -> None:
+    components.html(
+        dedent(
+            """
+            <script>
+            (function() {
+              const parentDoc = window.parent && window.parent.document;
+              if (!parentDoc) {
+                return;
+              }
+              const scriptId = "figma-mcp-capture-script";
+              if (parentDoc.getElementById(scriptId)) {
+                return;
+              }
+              const script = parentDoc.createElement("script");
+              script.id = scriptId;
+              script.src = "https://mcp.figma.com/mcp/html-to-design/capture.js";
+              script.async = true;
+              parentDoc.head.appendChild(script);
+            })();
             </script>
             """
         ).strip(),
@@ -2132,6 +2159,7 @@ if TITLE_LOGO_URI:
     title_logo_html = f"<div class='title-logo-wrap'><img class='title-logo' src='{TITLE_LOGO_URI}' alt='福幼标识'></div>"
 
 inject_scroll_persistence_script()
+inject_figma_capture_script()
 
 st.markdown(
     f"""
