@@ -55,6 +55,8 @@ PredictOvarianResponse-main/
 
 ### 一、准备环境
 
+conda activate Han_Overian
+
 打开该项目所在的 Terminal (终端)，第一步永远是安装外部 Python 依赖包：
 
 ```bash
