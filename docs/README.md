@@ -1,120 +1,278 @@
-# 🧬 IVF卵巢反应人工智能预测系统 (Python版)
+# Predicting Ovarian Response
 
-本仓库是一个针对体外受精 (IVF) 临床专用的**卵巢反应预测与促排策略推荐辅助决策系统**。
-最初系统由 R 语言开发（基于 `tidymodels` 和 `miceRanger`），本项目已将其**全部转化、重构并升级为了完整的 Python 模块化工程**，同时附带了极具科技感的高层级 Web 交互端。
+本仓是论文项目的独立工程：在 IVF/ICSI、GnRH-a 超长方案、首次促排治疗周期人群中，构建可解释 AI 辅助的个体化促排策略推荐与临床结局预测系统。
 
----
+## 当前主线
 
-## 🎯 系统核心功能与价值3.19
+- 唯一可写主线：`ssh zhishi-ts` 上的 `~/Han_PredictCP`
+- 运行环境：`Han_Overian`
+- GitHub：`git@github.com:Haaan1011/Predicting_Ovarian.git`
+- 日常状态只看：`docs/status.md`、`docs/PLANS.md`
 
-本系统主要用于辅助生殖医生在进行试管婴儿促排卵前，通过患者的少量基础体征数据评估其卵巢反应风险，以达到**精准控药、规避风险、提高获卵率**的目的：
+进入远端环境：
 
-1. **评估卵巢低反应 (POR/DOR) 风险**：防止由于促排卵药物剂量不够导致的无卵可用。
-2. **评估卵巢高反应 (OHSS/HOR) 风险**：防止卵巢过度刺激综合征这一严重并发症的发生。
-3. **提供智能促排策略建议**：基于 XGBoost 策略模型，能够动态推演“如果采用某类方案、某剂量能降低哪些风险”，并直接输出用药建议反馈给医生。
-4. **支持特征缺失 (MICE容错补全)**：即使患者某些化验单结果不全，系统内部构建的 随机森林多重插补器 也能推测并照常输出精准结果。
-
----
-
-## 📂 项目模块详细说明 (代码是干什么的？)
-
-该系统在 Python 层级做了高度的代码解耦，结构非常清晰。核心代码全部被放置在 `ovarian_prediction/` 包中。
-
-### 1. 核心后端代码树
-
-```text
-PredictOvarianResponse-main/
-│
-├── ovarian_prediction/        ⬅️ 核心 AI 引擎包
-│   ├── __init__.py            
-│   ├── preprocessing.py       ✅ [数据工厂] 清洗多余数据、MICE 缺失值插补、特征 One-Hot 编码的管线
-│   ├── models.py              ✅ [AI大脑] XGBoost 4个子分类器的定义，及 Optuna 贝叶斯最优超参数调优的实现
-│   ├── predict.py             ✅ [推理机] 单患者数据的清洗验证，并对接给模型获取预测概率
-│   ├── clinical_system.py     ✅ [临床大脑] 将冷冰冰的概率根据循证医学规则转化为具体的“医嘱文字”和“用药建议”
-│   ├── train.py               ✅ [调度员] 命令行独立脚本，用于在服务器后台一键喂入Excel数据训练出新模型
-│   └── requirements.txt       ✅ [依赖包] 系统运行需要什么外部包支持，全部写在这里
-│
-├── app.py                     ✅ [展现层] 基于 Streamlit 开发的动态 Web 大屏页面（极具高级科技感）
-└── README.md                  ✅ [说明书] 本文档
-```
-
-### 2. 关于内部的 4 大 XGBoost 子模型
-
-我们的系统并不是跑一个普通的模型了事，它底层拥有 **4个独立的 XGBoost 子模型** 并行工作相互校验：
-
-* `PORDM`：卵巢低反应诊断模型（仅用患者基础体征，不引入干预方案）。
-* `HORDM`：卵巢高反应诊断模型（同上）。
-* `PORSM`：卵巢低反应 **策略(Strategy)** 模型（除了体征，还要输入该患者拟采用的促排方案，看此方案是否能降低低反应率）。
-* `HORSM`：卵巢高反应 **策略(Strategy)** 模型（同上，评估此方案会不会激惹 OHSS）。
-
----
-
-## 🚀 指令操作大全 (如何运行？)
-
-无论您是数据分析师、Python开发还是临床部署工程师，请根据需求服用以下指令。
-
-### 一、准备环境
-
+```bash
+ssh zhishi-ts
+source /home/zhishi/anaconda3/etc/profile.d/conda.sh
 conda activate Han_Overian
-
-打开该项目所在的 Terminal (终端)，第一步永远是安装外部 Python 依赖包：
-
-```bash
-cd /home/zhishi/PredictOvarianResponse-main
-pip install -r ovarian_prediction/requirements.txt
+cd ~/Han_PredictCP
 ```
 
-> *注：用到的核心库包括 xgboost, scikit-learn, optuna, pandas 等。*
+## 正式 cohort
 
-### 二、日常使用：一键拉起 Web 临床评估前台
+正式训练、评估、解释和 UI 默认使用以下三条同时满足的人群：
 
-如果您想直接通过可视化网页输入参数并拿给专家或患者看，不需要执行复杂的代码：
+1. IVF/ICSI 相关字段
+2. GnRH-a 超长方案
+3. 首次促排治疗周期，即治疗次数 = 1
+
+当前固定 flow：`13900 -> 12639 -> 6696 -> 4071`。
+
+## 三层任务
+
+- Layer 1：下一次 Gn 调整方向分类（加量 / 维持 / 减量）+ KNN 相似病例解释；具体剂量只作为候选策略评分辅助，不再作为主监督学习目标。
+- Layer 2：获卵数、MII、OHSS 风险。
+- Layer 3：临床妊娠、活产。
+
+关键目标定义：
+
+- `target_mii = 获卵数 - GV - MI`
+- `target_live_birth = 早产 + 足月产 > 0`
+- 第三层不接入胚胎/移植变量。
+
+## 目录说明
+
+- `data/`：数据层。`data/raw/hospital_excel/` 放本地原始 Excel，`data/interim/` 放标准化中间表，`data/processed/` 放建模样本。
+- `preprocessing/`：数据 intake、清洗、标准化、字段映射。
+- `features/`：特征工程、动态 forward fill、layer1/layer2/layer3 样本构建。
+- `models/`：模型训练公共模块、模型注册、layer1/layer2/layer3 相关逻辑与模型产物。
+- `evaluation/`：指标、校准、比较和评估报告模块。
+- `explainability/`：SHAP 和病例解释模块。
+- `prototype/streamlit_app/`：Streamlit 原型界面。
+- `ui_design/`：UI 信息架构、组件规范、参考图和线框。
+- `configs/`：cohort、schema、features、targets、models、UI 配置。
+- `scripts/`：命令入口。训练、审计、样本构建、TensorBoard 生成都从这里执行。
+- `docs/`：项目状态、计划、审计和阶段记录。日常优先看 `docs/status.md` 和 `docs/PLANS.md`。
+- `skills/`：项目级 Codex skills。
+- `tests/`：单元测试和回归检查。
+
+## data 目录详细说明
+
+`data/` 是本项目最重要的可审计目录。原则是：
+
+- `data/raw/` 只保存原始输入，不作为训练直接读取。
+- `data/interim/` 保存标准化后的中间层结果，用于核对字段语义、时序和缺失处理。
+- `data/processed/` 保存可直接训练的样本层，必须能由脚本重复生成。
+- `data/profiles/` 保存数据画像、审计、排除因素、字段覆盖等报告。
+- `data/dictionary/` 保存原始字段到标准化字段的映射字典。
+- `data/splits/` 保存统一切分文件，保证所有层共用同一套 train/valid/test 口径。
+
+### 1. `data/raw/`
+
+- `data/raw/hospital_excel/`：医院原始 Excel，包含临床资料表和监测表。这里是源数据，不做训练读取。
+- `data/raw/.gitkeep`：保留空目录结构用，不是业务文件。
+
+### 2. `data/dictionary/`
+
+- `clinical_table_field_mapping.csv`：临床资料表原始字段到标准化字段的映射表。
+- `monitoring_table_field_mapping.csv`：监测表原始字段到标准化字段的映射表。
+- 这两个文件主要用于审计“原始字段到底被解释成了什么”，也是后续字段回溯的依据。
+
+### 3. `data/interim/`
+
+- `clinical_standardized.csv`：临床资料表标准化结果，保留中文原始语义与统一字段结构。
+- `monitoring_visits_standardized.csv`：监测 visit 级标准化表，保留第几次监测、日期锚点和核心激素信息。
+- `monitoring_medications_long.csv`：监测表中的药物明细长表，把重复药物字段展开成一行一药物的结构。
+- `monitoring_follicles_long.csv`：监测表中的卵泡明细长表，把卵泡直径与数目展开成长表。
+- `cycle_master_index.csv`：周期级主索引，连接临床表与监测表。
+- `standardization_report.md`、`standardization_summary.json`：标准化过程报告和摘要，说明用了什么规则解决了什么问题。
+
+### 4. `data/processed/`
+
+- `baseline_cycle_dataset.csv`：周期级基线样本，主要用于 cohort / 基线分析。
+- `snapshot_feature_dataset.csv`：快照特征母表，一行代表一个周期在一个监测时点的可见状态。
+- `layer1_strategy_dataset.csv`：第一层策略训练样本，只保留能够构造下一次 Gn 动作标签的快照。
+- `layer2_snapshot_dataset.csv`：第二层中间结局样本，用于获卵数、MII、OHSS 预测。
+- `layer3_snapshot_dataset.csv`：第三层终点样本，用于临床妊娠、活产预测。
+- `feature_manifest.json`：样本特征清单，说明每个 processed 数据集到底用了哪些列。
+- `sample_build_report.md`、`sample_build_summary.json`：样本构建报告和摘要，说明样本量、过滤规则和排除项。
+
+### 5. `data/profiles/`
+
+- `ingest_manifest.json`：原始数据 intake 清单。
+- `clinical_table_columns.csv`、`clinical_table_report.md`、`clinical_table_summary.json`：临床表画像与说明。
+- `monitoring_table_columns.csv`、`monitoring_table_report.md`、`monitoring_table_summary.json`：监测表画像与说明。
+- `monitoring_sheet_summary.csv`、`monitoring_union_column_coverage.csv`：监测各分表字段覆盖情况。
+- `factor_mapping_audit_v2.csv`：4.22 因素映射审计结果。
+- `raw_field_semantics_audit_v2.csv`：原始字段语义解释审计。
+- `exclusion_factors_audit_v2.csv`：明确排除项和原因。
+- `official_cohort_flow_v2.csv`、`official_cohort_data_audit_report_v2.md`、`official_cohort_data_audit_summary_v2.json`：正式 cohort flow 和审计结论。
+- `kong_preprocessing_v1_missingness_audit.csv`、`kong_preprocessing_v1_registry_columns.csv`：缺失率和预处理注册表审计。
+- `carry_forward_audit_v2.csv`：监测表行位继承/补值风险审计。
+
+### 6. `data/splits/`
+
+- `split_manifest_v1.csv`：统一切分表，所有层训练、验证、测试共用。
+- `data/splits/.gitkeep`：保留目录结构。
+
+### 7. 读法建议
+
+- 先看 `data/profiles/official_cohort_flow_v2.csv`，再看 `data/interim/standardization_report.md`，最后看 `data/processed/sample_build_report.md`。
+- 如果要核对某个字段怎么来的，优先查 `data/dictionary/*_field_mapping.csv`。
+- 如果要看某个样本层到底用到了哪些列，优先查 `data/processed/feature_manifest.json`。
+
+## 常用命令
+
+### 数据 intake / 标准化
 
 ```bash
-streamlit run app.py
+python scripts/ingest/run_ingest.py
+python scripts/ingest/run_standardize.py
+python scripts/ingest/run_male_factor_augment.py
 ```
 
-终端会输出一个本地网络地址 `http://localhost:8501/`，用浏览器打开即可。在这个界面，你可以享受极具动态和动画高级感的卵巢反应预测平台。
-
-### 三、后端开发：如何用您医院的真实数据从零训练这 4 个模型？
-
-因为原始 R 语言论文没有公开附带真实的医院 EXCEL 数据表（存在隐私政策），如果您手里有收集到的本地 Excel 文件（比如名叫 `original_derivation.xlsx`），您可以通过下面这行指令一键建立新模型：
+### 数据审计
 
 ```bash
-python -m ovarian_prediction.train --data original_derivation.xlsx --output models/
+python scripts/audit/run_data_audit.py
 ```
 
-**这条指令做了什么？**
-
-1. 读取传入的 Excel。
-2. 内部切分 70% 训练 30% 测试集。
-3. 对缺失值进行 MICE 随机森林迭代填补。
-4. Optuna 循环 50 次使用贝叶斯探索寻找当下医院数据最完美的 XGBoost 树深和学习率。
-5. 打印 AUC 评估并把成型的模型生成保存到 `models/` 文件夹下方。
-
-**如果您只想快速跑通测试看看代码效果（跳过漫长调参，用系统自己生成的假患者数据试运行）**：
+### 样本构建
 
 ```bash
-python -m ovarian_prediction.train --synthetic --no-tune
+python scripts/build_samples/run_build_samples.py
 ```
 
-### 四、快速在命令行里输出"医嘱打印小条"演示
+### 模型训练
+
+Layer1 的正式主目标已改为 Gn 调整方向三分类；Layer2 / Layer3 仍使用统一 `run_train.py`。
+
+
+#### Layer1 Gn 调整方向分类 + KNN 相似病例解释
+
+单目标 combined Gn action 训练：
 
 ```bash
-python -m ovarian_prediction.train --demo
+python scripts/train/run_layer1_action_train.py --threshold 37.5 --target combined_gn_action --models lightgbm xgboost catboost --knn-k 50 --knn-report-limit 25
 ```
 
-终端会模拟两个典型患者（一个是多囊卵巢易激惹的患者，一个是卵巢早衰低反应患者），直接把基于其状态生成的风险率、推荐长方案还是拮抗剂、是否推荐补充 LH 等中文长文本打印在命令行里，非常适合用来检查您的决策树链路。
+FSH / LH / HMG 三个拆分剂量 action 的正式优化训练：
 
----
+```bash
+python scripts/experiment/run_layer1_splitdose_action_optimization.py --threshold 75 --targets fsh_action lh_action hmg_action
+```
 
-## 💡 给后续接手开发同事的避坑指南 (Q&A)
+训练完成后会自动写入 TensorBoard display：`models/tensorboard_display/run/<RUN_ID>/_overview`，其中包含最终指标表、类别分布表、SHAP 图、混淆矩阵、预测分布图、KNN selection/success 图和相似病例表。
 
-1. **模型预测时的 `LabelEncoder` 报错？**
-   由于 xgboost 更新和 sklearn 的严格模式，在重构中已剔除了易导致未知字符串排序映射乱序的 LabelEncoder，内部 `models.py` 改用健壮的硬编码 `np.where(== "Yes")` 进行 0/1 判定，请勿再往系统里引入自动 Encoder。
+当前拆分剂量正式候选 run 为 `phase8_layer1_splitdose_action_opt_thr75_20260512_192404`。FSH/LH/HMG 分别输出独立 bundle，并登记在 `models/artifacts/current_layer1_split_action_runs.json`。37.5 IU 对照已保留为审计参考，但拆分剂量正式候选暂采用 75 IU 阈值，因为 FSH 与 HMG 的验证/测试表现更稳定。
 
-2. **如果在输入前台把某个参数留空了会报错吗？**
-   **不会！** 这是本系统的最大亮点。您在前台留下空白，传递给后台就会变成 `np.nan` 或 `None`。XGBoost 引擎天生具备对缺失叶子节点划分的容错支持，同时 MICE 填补器也会发挥作用进行特征代理。因此不必强求患者输入所有特征栏。
+主要输出：
 
-3. **想修改“中高低”风险的截断概率？**
-   原本 R 语言文献有特定的 ROC 阈值设定。如今全被整合到了 `ovarian_prediction/clinical_system.py` 顶部常量 `POR_THRESHOLDS` (0.2/0.4) 和 `HOR_THRESHOLDS` (0.2/0.35)。要改随手即可改，无须重训 AI。
+- `layer1_gn_action_metrics.csv`：Accuracy、Macro-F1、Weighted-F1、Precision、Recall、各类 support。
+- `layer1_gn_action_confusion_matrix.png`：加量 / 维持 / 减量混淆矩阵。
+- `layer1_gn_action_shap_top_features.png`：三分类模型 SHAP top features。
+- `layer1_gn_action_predictions.csv`：每个测试 snapshot 的预测动作和三类概率。
+- `layer1_knn_similar_action_stats.csv`：相似病例 action selection rate 和 success rate。
+- `layer1_knn_similar_patient_table.csv`：K 个相似历史病例明细。
+- `layer1_knn_selection_rate.png`、`layer1_knn_success_rate.png`、`similar_case_distance_plot.png`：KNN 解释图。
+
+#### 全量训练
+
+```bash
+python scripts/train/run_train.py --experiment-config configs/models/experiment_v1.yaml
+```
+
+#### Layer2 获卵数 / MII
+
+```bash
+python scripts/train/run_train.py --experiment-config configs/models/experiment_v1.yaml --tasks layer2_oocytes layer2_mii
+```
+
+#### Layer2 OHSS
+
+```bash
+python scripts/train/run_train.py --experiment-config configs/models/experiment_v1.yaml --tasks layer2_ohss
+```
+
+#### Layer3 临床妊娠 / 活产
+
+```bash
+python scripts/train/run_train.py --experiment-config configs/models/experiment_v1.yaml --tasks layer3_live_birth layer3_clinical_pregnancy
+```
+
+#### 指定模型
+
+```bash
+python scripts/train/run_train.py --experiment-config configs/models/experiment_v1.yaml --tasks layer2_oocytes --models lightgbm catboost
+```
+
+#### 强制重建切分
+
+```bash
+python scripts/train/run_train.py --experiment-config configs/models/experiment_v1.yaml --rebuild-splits
+```
+
+
+
+### 模型质量诊断
+
+```bash
+python scripts/diagnose_phase5_quality.py --run-id <RUN_ID>
+python scripts/diagnose_ohss_threshold_calibration.py --run-id <RUN_ID>
+python scripts/diagnose_ohss_cycle_level.py --run-id <RUN_ID>
+```
+
+### TensorBoard 展示日志
+
+TensorBoard 只保留训练过程曲线、SHAP 图片/文本和最终结果表格；不再把最终静态指标写成一条直线的 scalar 曲线。
+
+```bash
+python scripts/build_tensorboard_report.py --run-id <RUN_ID> --output-root models/tensorboard_display
+```
+
+启动 TensorBoard：
+
+```bash
+tensorboard --logdir models/tensorboard_display/run --host 127.0.0.1 --port 6006
+```
+
+### Layer1 action inference service
+
+Streamlit 结果页优先读取最新且实际包含 `layer1_gn_action_best_bundle.joblib` 的 `models/artifacts/phase8_layer1_action_*/layer1_action/` 目录，并基于 `data/processed/layer1_strategy_dataset.csv` 的训练集历史库实时生成 KNN 相似病例证据。若 bundle 内包含 `decision_weights`，推理服务会先校准三类概率再输出推荐动作；若 bundle 或历史库不可用，页面会回退到前端示例逻辑。
+
+### Streamlit UI
+
+```bash
+streamlit run prototype/streamlit_app/app.py --server.address 127.0.0.1 --server.port 8502
+```
+
+### 基础验证
+
+```bash
+python -m compileall common preprocessing features models evaluation explainability scripts prototype tests
+pytest -q
+```
+
+## 当前模型结论摘要
+
+- Layer2 获卵数与 MII 已明显优于 baseline，但仍需继续提升 RMSE/R2。
+- OHSS 是当前最高风险任务，PR-AUC 和概率校准仍需重点优化。
+- Layer3 当前采用 last1 + layer2 OOF stack 的稳定融合思路，临床妊娠和活产更适合作为预后倾向性参考。
+- GPU/CPU 同参对照已完成：当前数据规模下不直接切换 GPU 作为默认训练，只把 GPU 用于后续大规模调参。
+
+
+## Layer 1 KNN Similar-Patient Explanation
+
+Layer 1 首先基于当前 snapshot 特征预测下一次 Gn 调整方向：`increase`、`maintain`、`decrease`。随后 KNN 模块只使用当前时点可见信息，在训练集/历史库中检索相似病例，统计医生历史选择率 selection rate，以及不同动作下的卵巢反应成功率、MII 成功率、OHSS-free 率、临床妊娠率和活产率。
+
+KNN 匹配特征不包含 `next_gn_dose`、action 标签、获卵数、MII、OHSS、临床妊娠、活产、胚胎或移植变量；验证/测试样本检索时排除同一患者和同一周期。该模块用于解释和临床讨论，不代表因果推断或自动处方。
+
+## Git 注意事项
+
+- 原始 Excel、`data/interim`、`data/processed`、`models/artifacts`、TensorBoard 日志默认不提交。
+- 提交前先检查：
+
+```bash
+git status -sb
+git diff --stat
+```
